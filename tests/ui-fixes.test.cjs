@@ -9,13 +9,13 @@ const {
 } = require('../src/ui-fixes.cjs');
 
 test('project interaction fix is scoped to the active plugin view type', () => {
-  const css = projectInteractionFixCss('go-study-preview');
-  assert.match(css, /data-type="go-study-preview-workbench"/);
+  const css = projectInteractionFixCss('go-study');
+  assert.match(css, /data-type="go-study-workbench"/);
   assert.doesNotMatch(css, /data-type="learning-resource-hub-next-workbench"/);
 });
 
 test('wide project board cannot intercept heading clicks outside real cards', () => {
-  const css = projectInteractionFixCss('go-study-preview');
+  const css = projectInteractionFixCss('go-study');
   assert.match(css, /\.rh-next-project-heading \{[\s\S]*z-index: 4;[\s\S]*pointer-events: auto;/);
   assert.match(css, /\.rh-next-project-board \{[\s\S]*pointer-events: none;/);
   assert.match(css, /\.rh-next-project-board-item \{[\s\S]*pointer-events: auto;/);
@@ -23,6 +23,6 @@ test('wide project board cannot intercept heading clicks outside real cards', ()
 });
 
 test('plugin IDs used in CSS scope are validated', () => {
-  assert.equal(safePluginId('go-study-preview'), 'go-study-preview');
-  assert.throws(() => safePluginId('go-study-preview"] *'), /安全的 UI 修复作用域/);
+  assert.equal(safePluginId('go-study'), 'go-study');
+  assert.throws(() => safePluginId('go-study"] *'), /安全的 UI 修复作用域/);
 });
