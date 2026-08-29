@@ -52,7 +52,7 @@ function pluginDirectory(plugin) {
   const manifestDir = String(plugin?.manifest?.dir || '').trim();
   if (manifestDir) return path.isAbsolute(manifestDir) ? manifestDir : path.join(basePath, manifestDir);
   const configDir = plugin?.app?.vault?.configDir || '.obsidian';
-  const id = plugin?.manifest?.id || 'go-study-preview';
+  const id = plugin?.manifest?.id || 'go-study';
   return path.join(basePath, configDir, 'plugins', id);
 }
 
