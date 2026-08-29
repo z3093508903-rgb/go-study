@@ -1393,7 +1393,7 @@ const {
 const { registerResourceRelinkCommands } = __rhLoad("resource-relink-ui.cjs");
 const { registerLearningCaptureCommands } = __rhLoad("learning-capture.cjs");
 
-const LEGACY_GO_STUDY_PLUGIN_IDS = ['go-study-preview', 'learning-resource-hub-next'];
+const CONFLICTING_PREVIOUS_PLUGIN_IDS = ['go-study-preview', 'learning-resource-hub-next'];
 
 class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
   async onload() {
@@ -1413,7 +1413,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
 
     if (typeof this.app.workspace?.onLayoutReady === 'function') {
       this.app.workspace.onLayoutReady(() => {
-        void activateVaultLifecycle().catch((error) => console.error('Learning Resource Hub: vault validation failed after layout ready.', error));
+        void activateVaultLifecycle().catch((error) => console.error('Go Study: vault validation failed after layout ready.', error));
       });
     } else {
       await activateVaultLifecycle();
@@ -1434,7 +1434,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
     const currentId = String(this.manifest?.id || '').trim();
     if (!currentId) return false;
     const enabled = this.enabledPluginIds();
-    return LEGACY_GO_STUDY_PLUGIN_IDS.some((pluginId) => pluginId !== currentId && enabled.has(pluginId));
+    return CONFLICTING_PREVIOUS_PLUGIN_IDS.some((pluginId) => pluginId !== currentId && enabled.has(pluginId));
   }
 
   registerGoStudyReferenceProtocol() {
@@ -13890,8 +13890,7 @@ function recoveredStateFiles(plugin) {
   if (basePath) {
     for (const id of [
       plugin?.manifest?.id,
-      'go-study-preview',
-      'learning-resource-hub-next'
+      'go-study-preview'
     ].filter(Boolean)) {
       const dir = path.join(basePath, configDir, 'plugins', id);
       const dataPath = path.join(dir, 'data.json');
@@ -16015,7 +16014,7 @@ function pluginDirectory(plugin) {
   const manifestDir = String(plugin?.manifest?.dir || '').trim();
   if (manifestDir) return path.isAbsolute(manifestDir) ? manifestDir : path.join(basePath, manifestDir);
   const configDir = plugin?.app?.vault?.configDir || '.obsidian';
-  const id = plugin?.manifest?.id || 'go-study-preview';
+  const id = plugin?.manifest?.id || 'go-study';
   return path.join(basePath, configDir, 'plugins', id);
 }
 
