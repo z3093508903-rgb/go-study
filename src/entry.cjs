@@ -49,7 +49,7 @@ const {
 const { registerResourceRelinkCommands } = require('./resource-relink-ui.cjs');
 const { registerLearningCaptureCommands } = require('./learning-capture.cjs');
 
-const LEGACY_GO_STUDY_PLUGIN_IDS = ['go-study-preview', 'learning-resource-hub-next'];
+const CONFLICTING_PREVIOUS_PLUGIN_IDS = ['go-study-preview', 'learning-resource-hub-next'];
 
 class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
   async onload() {
@@ -90,7 +90,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
     const currentId = String(this.manifest?.id || '').trim();
     if (!currentId) return false;
     const enabled = this.enabledPluginIds();
-    return LEGACY_GO_STUDY_PLUGIN_IDS.some((pluginId) => pluginId !== currentId && enabled.has(pluginId));
+    return CONFLICTING_PREVIOUS_PLUGIN_IDS.some((pluginId) => pluginId !== currentId && enabled.has(pluginId));
   }
 
   registerGoStudyReferenceProtocol() {
