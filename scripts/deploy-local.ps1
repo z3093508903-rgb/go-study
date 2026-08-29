@@ -49,7 +49,7 @@ if (-not $PluginDir) {
   throw @"
 Local Obsidian plugin path is not configured.
 First run:
-  npm run deploy:local -- -PluginDir "C:\path\to\vault\.obsidian\plugins\learning-resource-hub-next" -SaveConfig
+  npm run deploy:local -- -PluginDir "C:\path\to\vault\.obsidian\plugins\go-study" -SaveConfig
 After that, use:
   npm run deploy:local
 "@
