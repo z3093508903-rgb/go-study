@@ -23,8 +23,8 @@ function pluginFixture() {
       }
     },
     manifest: {
-      id: 'go-study-preview',
-      dir: path.join('.obsidian', 'plugins', 'go-study-preview')
+      id: 'go-study',
+      dir: path.join('.obsidian', 'plugins', 'go-study')
     },
     state: { resources: {}, sources: {} },
     resourceActions(resource) {
