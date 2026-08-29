@@ -1,0 +1,9 @@
+{
+  "id": "go-study",
+  "name": "Go Study",
+  "version": "0.3.0",
+  "minAppVersion": "1.7.2",
+  "description": "Organize learning resources, resume videos, capture timestamped Markdown notes, and continue studying with less context switching.",
+  "author": "时运Ⅲ",
+  "isDesktopOnly": true
+}
