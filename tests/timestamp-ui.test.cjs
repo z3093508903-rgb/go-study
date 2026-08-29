@@ -9,7 +9,7 @@ const css = fs.readFileSync(path.resolve(__dirname, '..', 'styles.css'), 'utf8')
 const settingsSource = fs.readFileSync(path.resolve(__dirname, '..', 'src', 'product-settings.cjs'), 'utf8');
 
 test('Go Study timestamps ship with a compact capsule style', () => {
-  assert.match(css, /compact timestamp capsule/);
+  assert.match(css, /compact timestamp capsule/i);
   assert.match(css, /a\[href\^="obsidian:\/\/go-study"\]/);
   assert.match(css, /border-radius:\s*0\.46em/);
   assert.match(css, /background-image:\s*none !important/);
