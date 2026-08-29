@@ -52,7 +52,7 @@ const {
   writeRecoveryState
 } = require('./state-safety.cjs');
 
-const VIEW_TYPE = 'learning-resource-hub-next-workbench';
+const VIEW_TYPE = 'go-study-workbench';
 const ROUTES = ['today', 'project', 'library', 'subscriptions'];
 
 function safeText(value, fallback = '') {
