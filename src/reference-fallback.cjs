@@ -24,8 +24,7 @@ function recoveredStateFiles(plugin) {
   if (basePath) {
     for (const id of [
       plugin?.manifest?.id,
-      'go-study-preview',
-      'learning-resource-hub-next'
+      'go-study-preview'
     ].filter(Boolean)) {
       const dir = path.join(basePath, configDir, 'plugins', id);
       const dataPath = path.join(dir, 'data.json');
