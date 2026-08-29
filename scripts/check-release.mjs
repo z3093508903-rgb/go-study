@@ -107,8 +107,8 @@ if (!failures.some((item) => item.startsWith('未包含敏感扩展文件'))) pa
 
 if (exists('main.js')) {
   const built = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
-  if (built.includes('src/entry.cjs') || built.includes('ResourceHubNextPlugin')) pass('main.js 看起来是有效插件构建');
-  else fail('main.js 看起来是有效插件构建', '未找到预期入口标记');
+  if (built.includes('go-study-workbench') && built.includes('registerGoStudyReferenceProtocol')) pass('main.js 看起来是有效插件构建');
+  else fail('main.js 看起来是有效插件构建', '未找到 Go Study 稳定入口标记');
 }
 
 for (const check of checks) console.log(`${check.ok ? '✓' : '✗'} ${check.label}`);
