@@ -419,3 +419,19 @@ test('alpha.11 粘贴入口拦截本地文件夹拖放并复用统一预览', ()
   assert.match(paste, /stat\.isDirectory\(\)/);
   assert.match(paste, /this\.previewLocalFolder\(droppedPath\)/);
 });
+
+
+test('stable public identity is not hardcoded back to historical workbench/plugin ids', () => {
+  const styles = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const deploy = fs.readFileSync(path.join(root, 'scripts', 'deploy-local.ps1'), 'utf8');
+  const safety = fs.readFileSync(path.join(root, 'src', 'state-safety.cjs'), 'utf8');
+  const entry = fs.readFileSync(path.join(root, 'src', 'entry.cjs'), 'utf8');
+
+  assert.match(styles, /data-type="go-study-workbench"/);
+  assert.doesNotMatch(styles, /data-type="learning-resource-hub-next-workbench"/);
+  assert.match(deploy, /plugins\\go-study/);
+  assert.doesNotMatch(deploy, /plugins\\learning-resource-hub-next/);
+  assert.match(safety, /manifest\?\.id \|\| 'go-study'/);
+  assert.doesNotMatch(safety, /manifest\?\.id \|\| 'go-study-preview'/);
+  assert.doesNotMatch(entry, /Learning Resource Hub: vault validation failed/);
+});
