@@ -69,7 +69,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
 
     if (typeof this.app.workspace?.onLayoutReady === 'function') {
       this.app.workspace.onLayoutReady(() => {
-        void activateVaultLifecycle().catch((error) => console.error('Learning Resource Hub: vault validation failed after layout ready.', error));
+        void activateVaultLifecycle().catch((error) => console.error('Go Study: vault validation failed after layout ready.', error));
       });
     } else {
       await activateVaultLifecycle();
