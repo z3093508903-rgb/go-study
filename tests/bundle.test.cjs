@@ -16,6 +16,14 @@ test('manifest uses permanent Go Study identity and keeps desktop-only boundary'
   assert.equal(manifest.isDesktopOnly, true);
 });
 
+test('registered workbench view type stays aligned with the permanent plugin id', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
+  const source = fs.readFileSync(path.join(root, 'src', 'main.cjs'), 'utf8');
+  const match = source.match(/const VIEW_TYPE = '([^']+)'/);
+  assert.ok(match);
+  assert.equal(match[1], `${manifest.id}-workbench`);
+});
+
 test('构建结果内联模型且不依赖源码目录', () => {
   execFileSync(process.execPath, ['build.mjs'], { cwd: root, stdio: 'pipe' });
   const output = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
