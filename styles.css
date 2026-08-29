@@ -1,4 +1,4 @@
-.workspace-leaf-content[data-type="learning-resource-hub-next-workbench"] .view-content {
+.workspace-leaf-content[data-type="go-study-workbench"] .view-content {
   padding: 0;
   overflow: hidden;
 }
@@ -1004,7 +1004,7 @@ body.go-study-companion-window *::-webkit-scrollbar-thumb {
 }
 
 
-/* beta20 · optional lightweight floating timeline */
+/* Optional lightweight floating timeline */
 .go-study-timeline-host {
   position: relative;
 }
@@ -1263,7 +1263,7 @@ body.go-study-companion-window .go-study-timeline-hover {
   }
 }
 
-/* beta20.6 · compact timestamp capsule */
+/* Compact timestamp capsule */
 .markdown-reading-view a[href^="obsidian://go-study"],
 .markdown-source-view.mod-cm6 a[href^="obsidian://go-study"] {
   display: inline-flex;
@@ -1296,7 +1296,7 @@ body.go-study-companion-window .go-study-timeline-hover {
 }
 
 
-/* beta20.7 · native Obsidian drag target */
+/* Native Obsidian drag target */
 .go-study-study-mode-drop-target.is-native-obsidian {
   position: fixed;
   left: auto;
