@@ -63,7 +63,7 @@ test('managed browser URL resolves from current Resource when available', () => 
       browserUrlForReference(plugin, {
         resourceId: 'r1',
         position: { type: 'time', seconds: 65 },
-        version: 1
+        version: 3
       }),
       'https://www.bilibili.com/video/BV1CURRENT?p=2'
     );
@@ -72,31 +72,31 @@ test('managed browser URL resolves from current Resource when available', () => 
   }
 });
 
-test('legacy v1 Resource IDs can be recovered from external recovery snapshots', () => {
+test('missing Resource IDs can be recovered from external recovery snapshots', () => {
   const { base, plugin } = pluginFixture();
   try {
     writeRecoveryState(plugin, {
       projects: {},
       modules: {},
       resources: {
-        legacy: {
-          id: 'legacy',
-          title: '旧课程',
+        recovered: {
+          id: 'recovered',
+          title: '恢复课程',
           launcher: { type: 'potplayer', target: 'https://www.bilibili.com/video/BV1OLD' },
           metadata: { sourceUrl: 'https://www.bilibili.com/video/BV1OLD' }
         }
       },
       sources: {},
       uiState: {}
-    }, 'legacy');
-    const recovered = recoveredResourceById(plugin, 'legacy');
-    assert.equal(recovered.resource.title, '旧课程');
+    }, 'recovery');
+    const recovered = recoveredResourceById(plugin, 'recovered');
+    assert.equal(recovered.resource.title, '恢复课程');
     assert.match(recovered.filePath, /go-study-recovery/);
     assert.equal(
       browserUrlForReference(plugin, {
-        resourceId: 'legacy',
+        resourceId: 'recovered',
         position: { type: 'time', seconds: 9 },
-        version: 1
+        version: 3
       }),
       'https://www.bilibili.com/video/BV1OLD'
     );
@@ -105,8 +105,7 @@ test('legacy v1 Resource IDs can be recovered from external recovery snapshots',
   }
 });
 
-
-test('legacy Resource ID alias resolves to a newly collected resource', () => {
+test('Resource ID alias resolves to a newly collected resource', () => {
   const { base, plugin } = pluginFixture();
   try {
     plugin.state.resources.newResource = { id: 'newResource', title: '重新收录课程' };
@@ -118,7 +117,7 @@ test('legacy Resource ID alias resolves to a newly collected resource', () => {
       browserUrlForReference(plugin, {
         resourceId: 'oldResource',
         position: { type: 'time', seconds: 12 },
-        version: 1
+        version: 3
       }),
       'https://www.bilibili.com/video/BV1RELINK'
     );
