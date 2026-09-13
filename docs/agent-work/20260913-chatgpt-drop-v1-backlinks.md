@@ -26,11 +26,14 @@ This includes both:
 - `README.md`
 - `docs/ROADMAP.md`
 - `main.js` (generated only, through build)
+- `.github/workflows/rebuild-v1-cleanup.yml` (**temporary branch-only build helper; must be deleted before merge**)
 - this work record
 
 ### Scope deviation
 
 The first CI run after tightening the parser exposed existing v1 assumptions in runtime and Timeline tests. Those tests are now explicitly in scope. `tests/reference-fallback.test.cjs` is also in scope because its test names/fixtures describe generic Resource-ID recovery as “legacy v1” even though that recovery mechanism remains useful for current Managed links whose Resource state is missing.
+
+The follow-up CI completed the full release checks/tests successfully but failed only at the final committed-`main.js` drift check. Because `main.js` is generated and must not be hand-edited, this branch temporarily owns `.github/workflows/rebuild-v1-cleanup.yml` solely to run `npm run build`, commit the generated bundle, and then be deleted before merge.
 
 ## Do not touch
 
@@ -61,8 +64,9 @@ Owner confirmed there are no important notes relying on v1 compatibility and exp
 - Update internal managed-reference construction so runtime code does not create semantic v1 objects.
 - Move runtime/Timeline fixtures to current v3 semantics.
 - Keep Resource-ID recovery tests while removing misleading “legacy v1” semantics from them.
-- Rebuild `main.js`.
-- Run full repository CI/release checks.
+- Rebuild `main.js` from source, never hand-edit it.
+- Delete the temporary rebuild workflow.
+- Run final full repository CI/release checks.
 
 ## Rollback
 
@@ -71,4 +75,6 @@ Revert this work item/PR to restore v1/beta.15 input parsing. No user state migr
 ## Test log
 
 - [FAIL] First PR CI run: 425 tests, 418 pass, 7 fail. Failures were all stale v1 assumptions in `resource-reference-runtime` and `timeline-navigator`; the tightened protocol parser itself passed its new current-format/rejection tests.
-- [UNRUN] Follow-up full CI — pending cleanup of discovered dependencies and regenerated `main.js`.
+- [PASS] Follow-up CI `34749672367`: `Run release checks` passed after runtime/Timeline/recovery fixtures were moved to current semantics.
+- [FAIL] Same follow-up CI: only `Verify committed main.js is current` failed, proving generated bundle drift remains to be committed.
+- [UNRUN] Final CI — pending generated `main.js` rebuild and temporary workflow deletion.
