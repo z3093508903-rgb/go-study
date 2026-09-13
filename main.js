@@ -1366,6 +1366,7 @@ const {
   revealLoadedLeaf
 } = __rhLoad("release-hardening.cjs");
 const {
+  PORTABLE_MANAGED_REFERENCE_VERSION,
   REFERENCE_ACTION,
   parseProtocolParams
 } = __rhLoad("resource-reference.cjs");
@@ -1539,7 +1540,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
         const playerTime = formatPotPlayerTime(reference.position);
         const opened = await this.openPositionedPlayTarget(recovered.resource, actions.playTarget, playerTime);
         if (opened) {
-          new Notice('已从恢复快照识别这条旧回链；资源尚未重新收录到当前库。', 6000);
+          new Notice('已从恢复快照识别这条回链；资源尚未重新收录到当前库。', 6000);
           return true;
         }
       } catch (error) {
@@ -1553,11 +1554,11 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
       this.state.uiState.referenceAliases ||= {};
       this.state.uiState.referenceAliases[String(reference.resourceId || '')] = chosen.id;
       await this.persist();
-      new Notice(`旧回链已重新关联：${chosen.title || chosen.id}`, 5000);
+      new Notice(`回链已重新关联：${chosen.title || chosen.id}`, 5000);
       return this.openResourceReference(reference);
     }
 
-    throw new Error('Go Study 找不到这条旧回链对应的学习资源，而且旧链接没有携带可恢复的来源信息。可先重新收录对应视频，再普通点击旧时间戳进行一次性重新关联。');
+    throw new Error('Go Study 找不到这条回链对应的学习资源，而且链接没有携带可恢复的来源信息。可先重新收录对应视频，再普通点击时间戳进行一次性重新关联。');
   }
 
   browserUrlForReference(reference) {
@@ -1565,7 +1566,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
   }
 
   async openFreeformReference(reference) {
-    const locator = reference?.locator || reference?.path;
+    const locator = reference?.locator;
     const resolveActions = (resource) => this.resourceActions(resource);
     const exactManaged = matchingManagedResource(this.state, locator, resolveActions);
     const portableManaged = exactManaged || matchingManagedResourceByPortableName(
@@ -1577,7 +1578,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
       return this.openResourceReference({
         resourceId: portableManaged.id,
         position: reference.position,
-        version: 1
+        version: PORTABLE_MANAGED_REFERENCE_VERSION
       });
     }
     try {
@@ -14911,10 +14912,9 @@ module.exports = {
 'use strict';
 
 const REFERENCE_ACTION = 'go-study';
-const REFERENCE_VERSION = 1;
 const FREEFORM_REFERENCE_VERSION = 2;
 const PORTABLE_MANAGED_REFERENCE_VERSION = 3;
-const ALLOWED_QUERY_KEYS = new Set(['resource', 'position', 'v', 'mode', 'locator', 'name', 'title', 'path', 'web']);
+const ALLOWED_QUERY_KEYS = new Set(['resource', 'position', 'v', 'mode', 'locator', 'name', 'title', 'web']);
 const ALLOWED_PROTOCOL_META_KEYS = new Set(['action']);
 const RESOURCE_ID_PATTERN = /^[A-Za-z0-9._:-]{1,256}$/;
 
@@ -14930,7 +14930,7 @@ function normalizeReferencePosition(value) {
   }
   const text = String(value || '').trim();
   const match = text.match(/^time:(.+)$/i);
-  if (!match) throw new Error('Go Study v1 仅支持 time:<seconds> 学习位置。');
+  if (!match) throw new Error('Go Study 回链目前仅支持 time:<seconds> 学习位置。');
   const seconds = Number(match[1]);
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Go Study 回链中的时间位置无效。');
   return { type: 'time', seconds };
@@ -14940,6 +14940,7 @@ function serializeReferencePosition(position) {
   const normalized = normalizeReferencePosition(position);
   return `time:${String(normalized.seconds)}`;
 }
+
 function markdownSafeReferenceUri(rawUri) {
   const raw = String(rawUri || '');
   const queryIndex = raw.indexOf('?');
@@ -14957,10 +14958,9 @@ function markdownSafeReferenceUri(rawUri) {
   return base + safeQuery;
 }
 
-
 function normalizeReferenceVersion(value) {
   const version = Number(value);
-  if (!Number.isInteger(version) || ![REFERENCE_VERSION, FREEFORM_REFERENCE_VERSION, PORTABLE_MANAGED_REFERENCE_VERSION].includes(version)) {
+  if (!Number.isInteger(version) || ![FREEFORM_REFERENCE_VERSION, PORTABLE_MANAGED_REFERENCE_VERSION].includes(version)) {
     throw new Error(`不支持的 Go Study 回链版本：${String(value || '') || '缺失'}。`);
   }
   return version;
@@ -15035,15 +15035,14 @@ function normalizeOptionalPortableMediaName(value) {
 
 function validateReferenceData(input) {
   const source = input && typeof input === 'object' ? input : {};
-  const version = normalizeReferenceVersion(source.version ?? source.v ?? REFERENCE_VERSION);
-  if (![REFERENCE_VERSION, PORTABLE_MANAGED_REFERENCE_VERSION].includes(version)) {
-    throw new Error(`Managed Go Study 回链只支持 v${REFERENCE_VERSION} 或 v${PORTABLE_MANAGED_REFERENCE_VERSION}。`);
+  const version = normalizeReferenceVersion(source.version ?? source.v ?? PORTABLE_MANAGED_REFERENCE_VERSION);
+  if (version !== PORTABLE_MANAGED_REFERENCE_VERSION) {
+    throw new Error(`Managed Go Study 回链只支持当前格式 v${PORTABLE_MANAGED_REFERENCE_VERSION}。`);
   }
-  const portable = version === PORTABLE_MANAGED_REFERENCE_VERSION;
-  const locator = portable ? normalizeOptionalManagedLocator(source.locator) : '';
-  const name = portable ? normalizeOptionalPortableMediaName(source.name || (locator ? freeformLocatorName(locator) : '')) : '';
-  const title = portable ? normalizeOptionalMediaTitle(source.title) : '';
-  const web = portable ? normalizeOptionalWebLocator(source.web) : '';
+  const locator = normalizeOptionalManagedLocator(source.locator);
+  const name = normalizeOptionalPortableMediaName(source.name || (locator ? freeformLocatorName(locator) : ''));
+  const title = normalizeOptionalMediaTitle(source.title);
+  const web = normalizeOptionalWebLocator(source.web);
   return {
     resourceId: normalizeResourceId(source.resourceId ?? source.resource),
     ...(locator ? { locator } : {}),
@@ -15057,8 +15056,11 @@ function validateReferenceData(input) {
 
 function validateFreeformReferenceData(input) {
   const source = input && typeof input === 'object' ? input : {};
-  const locator = normalizeFreeformLocator(source.locator ?? source.path);
+  const locator = normalizeFreeformLocator(source.locator);
   const version = normalizeReferenceVersion(source.version ?? source.v ?? FREEFORM_REFERENCE_VERSION);
+  if (version !== FREEFORM_REFERENCE_VERSION) {
+    throw new Error(`Freeform Go Study 回链只支持当前格式 v${FREEFORM_REFERENCE_VERSION}。`);
+  }
   const title = normalizeOptionalMediaTitle(source.title);
   return {
     mode: 'freeform',
@@ -15072,15 +15074,13 @@ function validateFreeformReferenceData(input) {
 }
 
 function buildReferenceUri(input) {
-  const reference = validateReferenceData(input);
+  const reference = validateReferenceData({ ...input, version: input?.version ?? input?.v ?? PORTABLE_MANAGED_REFERENCE_VERSION });
   const url = new URL(`obsidian://${REFERENCE_ACTION}`);
   url.searchParams.set('resource', reference.resourceId);
-  if (reference.version === PORTABLE_MANAGED_REFERENCE_VERSION) {
-    if (reference.locator) url.searchParams.set('locator', reference.locator);
-    if (reference.name) url.searchParams.set('name', reference.name);
-    if (reference.title) url.searchParams.set('title', reference.title);
-    if (reference.web) url.searchParams.set('web', reference.web);
-  }
+  if (reference.locator) url.searchParams.set('locator', reference.locator);
+  if (reference.name) url.searchParams.set('name', reference.name);
+  if (reference.title) url.searchParams.set('title', reference.title);
+  if (reference.web) url.searchParams.set('web', reference.web);
   url.searchParams.set('position', serializeReferencePosition(reference.position));
   url.searchParams.set('v', String(reference.version));
   return markdownSafeReferenceUri(url.toString());
@@ -15107,10 +15107,9 @@ function parseQueryEntries(searchParams) {
   }
   if (searchParams.get('mode') === 'freeform') {
     if (searchParams.has('resource')) throw new Error('Go Study 自由回链不能同时包含 Resource ID。');
-    if (searchParams.has('locator') && searchParams.has('path')) throw new Error('Go Study 自由回链不能同时包含 locator 与旧 path 参数。');
     return validateFreeformReferenceData({
       mode: 'freeform',
-      locator: searchParams.get('locator') || searchParams.get('path'),
+      locator: searchParams.get('locator'),
       name: searchParams.get('name') || '',
       title: searchParams.get('title') || '',
       web: searchParams.get('web'),
@@ -15118,13 +15117,7 @@ function parseQueryEntries(searchParams) {
       v: searchParams.get('v')
     });
   }
-  if (searchParams.has('mode') || searchParams.has('path')) {
-    throw new Error('Go Study 管理型回链包含不允许的参数。');
-  }
-  const version = normalizeReferenceVersion(searchParams.get('v'));
-  if (version === REFERENCE_VERSION && (searchParams.has('locator') || searchParams.has('name') || searchParams.has('title') || searchParams.has('web'))) {
-    throw new Error('Go Study v1 管理型回链不能携带便携来源字段。');
-  }
+  if (searchParams.has('mode')) throw new Error('Go Study 管理型回链包含不允许的参数。');
   return validateReferenceData({
     resource: searchParams.get('resource'),
     locator: searchParams.get('locator') || '',
@@ -15139,9 +15132,7 @@ function parseQueryEntries(searchParams) {
 function parseReferenceUri(rawUri) {
   let url;
   try { url = new URL(String(rawUri || '').trim()); } catch { throw new Error('Go Study 回链格式无效。'); }
-  if (url.protocol !== 'obsidian:' || url.hostname !== REFERENCE_ACTION) {
-    throw new Error('这不是 Go Study 回链。');
-  }
+  if (url.protocol !== 'obsidian:' || url.hostname !== REFERENCE_ACTION) throw new Error('这不是 Go Study 回链。');
   if ((url.pathname && url.pathname !== '/') || url.username || url.password || url.port || url.hash) {
     throw new Error('Go Study 回链包含不允许的地址结构。');
   }
@@ -15164,16 +15155,9 @@ function parseProtocolParams(params) {
   }
   if (String(source.mode || '') === 'freeform') {
     if (source.resource != null) throw new Error('Go Study 自由回链不能同时包含 Resource ID。');
-    if (source.locator != null && source.path != null) throw new Error('Go Study 自由回链不能同时包含 locator 与旧 path 参数。');
     return validateFreeformReferenceData(source);
   }
-  if (source.mode != null || source.path != null) {
-    throw new Error('Go Study 管理型回链包含不允许的参数。');
-  }
-  const version = normalizeReferenceVersion(source.v);
-  if (version === REFERENCE_VERSION && (source.locator != null || source.name != null || source.title != null || source.web != null)) {
-    throw new Error('Go Study v1 管理型回链不能携带便携来源字段。');
-  }
+  if (source.mode != null) throw new Error('Go Study 管理型回链包含不允许的参数。');
   return validateReferenceData({
     resource: source.resource,
     locator: source.locator || '',
@@ -15191,7 +15175,6 @@ module.exports = {
   FREEFORM_REFERENCE_VERSION,
   PORTABLE_MANAGED_REFERENCE_VERSION,
   REFERENCE_ACTION,
-  REFERENCE_VERSION,
   buildFreeformReferenceUri,
   buildReferenceUri,
   markdownSafeReferenceUri,
