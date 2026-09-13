@@ -18,6 +18,17 @@ jobs:
           node-version: '22'
       - name: Apply repair
         run: python scripts/tmp_patch_vault_lifecycle.py
+      - name: Normalize generated strict-mode headers
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for name in ['src/vault-lifecycle.cjs', 'tests/vault-lifecycle.test.cjs']:
+              p = Path(name)
+              s = p.read_text(encoding='utf-8')
+              s = s.replace("\\\\'use strict\\\\';", "'use strict';", 1)
+              s = s.replace("\\'use strict\\';", "'use strict';", 1)
+              p.write_text(s, encoding='utf-8')
+          PY
       - name: Focused tests
         run: node --test tests/vault-lifecycle.test.cjs tests/project-notes.test.cjs tests/runtime-architecture-characterization.test.cjs
       - name: Build bundle
