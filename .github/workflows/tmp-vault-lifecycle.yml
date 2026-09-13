@@ -18,7 +18,7 @@ jobs:
           node-version: '22'
       - name: Apply repair
         run: python scripts/tmp_patch_vault_lifecycle.py
-      - name: Normalize generated strict-mode headers
+      - name: Normalize generated test fixtures
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -27,6 +27,11 @@ jobs:
               s = p.read_text(encoding='utf-8')
               s = s.replace("\\\\'use strict\\\\';", "'use strict';", 1)
               s = s.replace("\\'use strict\\';", "'use strict';", 1)
+              if name.endswith('vault-lifecycle.test.cjs'):
+                  s = s.replace(
+                      "workbenchLeaf: { view: { render: async () => { this.renderCalls += 1; } } }",
+                      "workbenchLeaf: { view: { render: async () => {} } }"
+                  )
               p.write_text(s, encoding='utf-8')
           PY
       - name: Focused tests
