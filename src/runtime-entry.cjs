@@ -12,6 +12,7 @@ const { registerCompanionNoteCommands } = require('./companion-note-window.cjs')
 const { registerBilibiliWebBridge } = require('./bilibili-web-bridge.cjs');
 const { enterStudyMode, exitStudyMode, studyModeState } = require('./study-mode.cjs');
 const { installTimelineNavigator } = require('./timeline-navigator.cjs');
+const { coordinateVaultLifecycleEvent } = require('./vault-lifecycle.cjs');
 const {
   clearProjectNoteFoldersOnDelete,
   ensureProjectNotesState,
@@ -129,35 +130,29 @@ class ResourceHubNextRuntimePlugin extends ResourceHubNextPlugin {
   }
 
   async handleVaultRename(entry, oldPath) {
-    const result = await super.handleVaultRename(entry, oldPath);
-    const changedNotes = updateProjectNotePathsOnRename(this.state, oldPath, entry?.path);
-    const changedFolders = updateProjectNoteFoldersOnRename(this.state, oldPath, entry?.path);
-    if (changedNotes || changedFolders) {
-      await this.persist();
-      await this.workbenchLeaf?.view?.render?.();
-    }
-    return result;
+    return coordinateVaultLifecycleEvent(this, () => {
+      const changedRefs = this.applyVaultRename(entry, oldPath);
+      const changedNotes = updateProjectNotePathsOnRename(this.state, oldPath, entry?.path);
+      const changedFolders = updateProjectNoteFoldersOnRename(this.state, oldPath, entry?.path);
+      return { changed: Boolean(changedRefs || changedNotes || changedFolders), result: changedRefs };
+    });
   }
 
   async handleVaultDelete(entry) {
-    const result = await super.handleVaultDelete(entry);
-    const changedNotes = markProjectNotesMissing(this.state, entry?.path);
-    const changedFolders = clearProjectNoteFoldersOnDelete(this.state, entry?.path);
-    if (changedNotes || changedFolders) {
-      await this.persist();
-      await this.workbenchLeaf?.view?.render?.();
-    }
-    return result;
+    return coordinateVaultLifecycleEvent(this, () => {
+      const changedRefs = this.applyVaultDelete(entry);
+      const changedNotes = markProjectNotesMissing(this.state, entry?.path);
+      const changedFolders = clearProjectNoteFoldersOnDelete(this.state, entry?.path);
+      return { changed: Boolean(changedRefs || changedNotes || changedFolders), result: changedRefs };
+    });
   }
 
   async handleVaultCreate(entry) {
-    const result = await super.handleVaultCreate(entry);
-    const changed = restoreProjectNotePath(this.state, entry?.path);
-    if (changed) {
-      await this.persist();
-      await this.workbenchLeaf?.view?.render?.();
-    }
-    return result;
+    return coordinateVaultLifecycleEvent(this, () => {
+      const changedRefs = this.applyVaultCreate(entry);
+      const changedNotes = restoreProjectNotePath(this.state, entry?.path);
+      return { changed: Boolean(changedRefs || changedNotes), result: changedRefs };
+    });
   }
 
   async collapseSidebar() {
