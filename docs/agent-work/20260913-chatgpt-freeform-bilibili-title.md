@@ -21,14 +21,14 @@ Fix the right-side Timeline title for uncollected / Freeform Bilibili media. Man
 
 - `src/bilibili-metadata.cjs` (new)
 - `src/learning-capture.cjs`
-- `src/bilibili-web-bridge.cjs`
 - `src/timeline-navigator.cjs`
 - `tests/bilibili-metadata.test.cjs` (new)
 - `tests/learning-capture.test.cjs`
-- `tests/bilibili-web-bridge.test.cjs`
 - `tests/timeline-navigator.test.cjs`
 - `docs/CODE_PRODUCT_SEMANTICS.md`
 - `main.js` (generated only through build)
+- `.github/workflows/tmp-freeform-bili-title.yml` (temporary branch-only helper; deleted before merge)
+- `scripts/tmp_apply_freeform_bili_title.py` (temporary branch-only helper; deleted before merge)
 - this work record
 
 Additional files may enter scope only if CI proves a direct dependency; any scope deviation must be recorded first.
@@ -57,7 +57,7 @@ Additional files may enter scope only if CI proves a direct dependency; any scop
 - Verify human titles never trigger a metadata request.
 - Verify BV-only Freeform capture enriches the generated backlink title when metadata resolves.
 - Verify lookup failure still inserts a working backlink.
-- Verify Bilibili Web Bridge can remember a good title in an in-memory cache.
+- Verify Timeline can use an already-known cached/live Bilibili title without performing network I/O itself.
 - Verify Timeline prefers cached human title over a BV-only Freeform title but keeps normal Freeform titles unchanged.
 - Rebuild `main.js` and run full repository CI/release checks.
 - Real Windows/Obsidian acceptance remains required for the user’s exact PotPlayer/Bilibili path.

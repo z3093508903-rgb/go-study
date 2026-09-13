@@ -328,3 +328,20 @@ test('portable managed v3 keeps its source title visible in Timeline after Resou
   assert.equal(groups[0].title, '遗失资源但来源仍可识别');
   assert.equal(groups[0].items[0].time, '00:33');
 });
+
+test('Timeline upgrades a BV-only Freeform label from the in-memory Bilibili title cache', () => {
+  const bvid = 'BV1xx411c7mD';
+  const uri = buildFreeformReferenceUri({
+    locator: `D:\\Loose\\${bvid}.mp4`,
+    name: `${bvid}.mp4`,
+    title: bvid,
+    position: { type: 'time', seconds: 65 }
+  });
+  const plugin = pluginFixture();
+  plugin._goStudyBilibiliTitleCache = new Map([[bvid.toLowerCase(), '真实课程标题']]);
+  const groups = timelineGroupsFromMarkdown(`[回到课程](${uri})`, plugin);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].title, '真实课程标题');
+  assert.equal(groups[0].items[0].time, '01:05');
+});
+

@@ -307,3 +307,49 @@ test('Bilibili web current position writes a direct timestamp URL instead of a P
   assert.match(inserted[0], /https:\/\/www\.bilibili\.com\/video\/BV1WEB\?p=4&t=69\.4/);
   assert.doesNotMatch(inserted[0], /obsidian:\/\/go-study/);
 });
+
+test('BV-only Freeform PotPlayer capture enriches the backlink with the real Bilibili title', async () => {
+  const { insertCurrentLearningPosition } = loadCaptureModule();
+  const { plugin, inserted } = localPluginFixture();
+  plugin.state.resources = {};
+  plugin.activeMediaSession = null;
+  plugin.resourceActions = () => ({});
+  const bvid = 'BV1xx411c7mD';
+  const result = await insertCurrentLearningPosition(plugin, {
+    bridgeRequest: async () => ({
+      ok: true,
+      media: {
+        path: `https://www.bilibili.com/video/${bvid}`,
+        title: `${bvid} - PotPlayer`,
+        positionSeconds: 37.5
+      }
+    }),
+    requestUrl: async () => ({ json: { code: 0, data: { title: '真正的视频标题' } } }),
+    editor: { replaceSelection: (text) => inserted.push(text) }
+  });
+  assert.equal(result.mode, 'freeform');
+  assert.equal(result.bridgeMedia.title, '真正的视频标题');
+  assert.match(decodeURIComponent(inserted[0]), /title=真正的视频标题/);
+  assert.match(inserted[0], /v=2/);
+});
+
+test('BV title lookup failure never blocks Freeform timestamp insertion', async () => {
+  const { insertCurrentLearningPosition } = loadCaptureModule();
+  const { plugin, inserted } = localPluginFixture();
+  plugin.state.resources = {};
+  plugin.activeMediaSession = null;
+  plugin.resourceActions = () => ({});
+  const bvid = 'BV1xx411c7mD';
+  const result = await insertCurrentLearningPosition(plugin, {
+    bridgeRequest: async () => ({
+      ok: true,
+      media: { path: `D:\\Loose\\${bvid}.mp4`, title: bvid, positionSeconds: 12 }
+    }),
+    requestUrl: async () => { throw new Error('offline'); },
+    editor: { replaceSelection: (text) => inserted.push(text) }
+  });
+  assert.equal(result.mode, 'freeform');
+  assert.equal(inserted.length, 1);
+  assert.match(inserted[0], /obsidian:\/\/go-study\?/);
+});
+

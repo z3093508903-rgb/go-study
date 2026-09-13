@@ -10,6 +10,11 @@ const {
   matchingManagedResourceByPortableName
 } = require('./media-session.cjs');
 const { currentResourceForReference } = require('./reference-fallback.cjs');
+const {
+  extractBilibiliBvid,
+  isBilibiliMachineTitle,
+  liveBilibiliTitleForReference
+} = require('./bilibili-metadata.cjs');
 
 
 function cleanSourceTitle(value) {
@@ -45,8 +50,12 @@ function managedSource(plugin, resource, upgradedFrom = null) {
   };
 }
 
-function freeformSource(reference) {
+function freeformSource(reference, plugin) {
+  const bvid = extractBilibiliBvid(reference.web, reference.locator, reference.title, reference.name);
   let fallback = cleanSourceTitle(reference.title) || cleanSourceTitle(reference.name);
+  if (bvid && (!fallback || isBilibiliMachineTitle(fallback, bvid))) {
+    fallback = cleanSourceTitle(liveBilibiliTitleForReference(plugin, reference)) || fallback;
+  }
   if (!fallback) {
     try {
       const url = new URL(String(reference.web || reference.locator || ''));
@@ -94,7 +103,7 @@ function sourceForReference(plugin, reference) {
     if (upgraded) return managedSource(plugin, upgraded, reference);
   } catch {}
 
-  return freeformSource(reference);
+  return freeformSource(reference, plugin);
 }
 
 function timelineGroupsFromMarkdown(markdown, plugin, diagnostics = null) {
