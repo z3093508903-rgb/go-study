@@ -22,6 +22,7 @@ const {
   revealLoadedLeaf
 } = require('./release-hardening.cjs');
 const {
+  PORTABLE_MANAGED_REFERENCE_VERSION,
   REFERENCE_ACTION,
   parseProtocolParams
 } = require('./resource-reference.cjs');
@@ -195,7 +196,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
         const playerTime = formatPotPlayerTime(reference.position);
         const opened = await this.openPositionedPlayTarget(recovered.resource, actions.playTarget, playerTime);
         if (opened) {
-          new Notice('已从恢复快照识别这条旧回链；资源尚未重新收录到当前库。', 6000);
+          new Notice('已从恢复快照识别这条回链；资源尚未重新收录到当前库。', 6000);
           return true;
         }
       } catch (error) {
@@ -209,11 +210,11 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
       this.state.uiState.referenceAliases ||= {};
       this.state.uiState.referenceAliases[String(reference.resourceId || '')] = chosen.id;
       await this.persist();
-      new Notice(`旧回链已重新关联：${chosen.title || chosen.id}`, 5000);
+      new Notice(`回链已重新关联：${chosen.title || chosen.id}`, 5000);
       return this.openResourceReference(reference);
     }
 
-    throw new Error('Go Study 找不到这条旧回链对应的学习资源，而且旧链接没有携带可恢复的来源信息。可先重新收录对应视频，再普通点击旧时间戳进行一次性重新关联。');
+    throw new Error('Go Study 找不到这条回链对应的学习资源，而且链接没有携带可恢复的来源信息。可先重新收录对应视频，再普通点击时间戳进行一次性重新关联。');
   }
 
   browserUrlForReference(reference) {
@@ -221,7 +222,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
   }
 
   async openFreeformReference(reference) {
-    const locator = reference?.locator || reference?.path;
+    const locator = reference?.locator;
     const resolveActions = (resource) => this.resourceActions(resource);
     const exactManaged = matchingManagedResource(this.state, locator, resolveActions);
     const portableManaged = exactManaged || matchingManagedResourceByPortableName(
@@ -233,7 +234,7 @@ class ResourceHubNextPlugin extends BaseResourceHubNextPlugin {
       return this.openResourceReference({
         resourceId: portableManaged.id,
         position: reference.position,
-        version: 1
+        version: PORTABLE_MANAGED_REFERENCE_VERSION
       });
     }
     try {
