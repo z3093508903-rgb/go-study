@@ -27,11 +27,13 @@ Read, in order:
 1. `docs/AGENT_COLLABORATION.md`
 2. `docs/HANDOFF_CURRENT.md`
 3. active `docs/agent-work/*.md` records that overlap the task
-4. `README.md`
-5. `docs/USER_GUIDE.md`
-6. the current release notes relevant to the target version
-7. `manifest.json`
-8. the code/tests directly relevant to the task
+4. `docs/CODE_PRODUCT_SEMANTICS.md` — translate product language into code ownership
+5. `docs/ARCHITECTURE_RUNTIME_MAP.md` when work touches lifecycle/orchestration/runtime layers
+6. `README.md`
+7. `docs/USER_GUIDE.md`
+8. the current release notes relevant to the target version
+9. `manifest.json`
+10. the code/tests directly relevant to the task
 
 Repository state is authoritative over old chat memory.
 
@@ -51,6 +53,8 @@ Minimum contract:
 
 `docs/HANDOFF_CURRENT.md` is a baseline summary, not a scratchpad. Routine task details belong in the work record.
 
+When a task changes the ownership or meaning of a user-facing product concept, update `docs/CODE_PRODUCT_SEMANTICS.md` in the same accepted work item.
+
 ## Current release rule
 
 Go Study 0.3.0 is feature-frozen.
@@ -61,7 +65,7 @@ Before the first public release candidate is accepted:
 - do not add YouTube, AI, cloud sync, OCR, statistics, calendar, or new platform features;
 - preserve Preview -> Stable migration;
 - preserve optional Legacy JV compatibility;
-- do not casually add or remove beta-era compatibility behavior without first documenting the actual parser/runtime behavior;
+- do not casually add or remove beta-era compatibility behavior without first documenting the actual parser/runtime behavior and owner decision;
 - do not reintroduce the withdrawn OpenList unsigned fallback.
 
 Post-0.3 candidate work is recorded in `docs/ROADMAP.md` and is not automatically approved for the frozen release.
@@ -82,7 +86,7 @@ Important compatibility distinction:
 - do not claim an old format is unsupported until parser/runtime/tests confirm it;
 - do not claim compatibility merely because an old identifier still exists internally.
 
-See `docs/ROADMAP.md` for the current compatibility inventory.
+See `docs/ROADMAP.md` for the current compatibility inventory/decisions.
 
 ## Release validation
 
