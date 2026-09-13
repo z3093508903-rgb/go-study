@@ -1,6 +1,6 @@
 # Go Study — Product / Engineering Roadmap
 
-This roadmap records candidate work after the 0.3.0 release freeze. Items here are options, not promises or committed release dates.
+This roadmap records candidate work after the 0.3.0 release freeze. Items here are options, not promises or committed release dates unless explicitly marked `planned`.
 
 ## Status vocabulary
 
@@ -9,6 +9,7 @@ This roadmap records candidate work after the 0.3.0 release freeze. Items here a
 - `in_progress` — active work_id exists.
 - `deferred` — intentionally postponed.
 - `rejected` — do not pursue unless the owner reopens the decision.
+- `done` — decision/work has been implemented and validated.
 
 ---
 
@@ -77,7 +78,6 @@ Behavior candidate:
 
 ### Non-goals
 
-- Do not change 0.3.0 runtime behavior during release freeze.
 - Do not hide bridge startup errors.
 
 ---
@@ -88,7 +88,7 @@ Behavior candidate:
 
 The current implementation has accumulated compatibility/extension layers around `main.cjs`, `entry.cjs`, and `runtime-entry.cjs`.
 
-A post-release refactor may reduce inheritance/override patching and move toward explicit services/modules such as:
+A future refactor may reduce inheritance/override patching and move toward explicit services/modules such as:
 
 - Workbench controller;
 - Project/resource services;
@@ -104,19 +104,20 @@ This is an engineering-maintainability project, not a user-facing feature.
 Constraints:
 
 - preserve current behavior first;
-- no mass rename mixed into the architectural refactor;
+- use `docs/ARCHITECTURE_RUNTIME_MAP.md` and characterization tests as the baseline;
+- no mass rename mixed into architectural refactors;
 - migration/state behavior requires dedicated tests;
-- do not remove old-input compatibility merely because the code looks cleaner.
+- prefer incremental flattening over rewrite-from-scratch.
 
 ---
 
 ## 4. Release engineering cleanup
 
-**Status:** `planned`
+**Status:** `done`
 
 ### Version-aware release notes
 
-Release workflow should select release notes from the tag/version instead of permanently hard-coding `0.3.0`.
+Release workflow selects release notes from the tag/version instead of permanently hard-coding `0.3.0`.
 
 Convention:
 
@@ -128,7 +129,7 @@ Examples:
 - `docs/RELEASE_NOTES_0.3.1.md`
 - `docs/RELEASE_NOTES_0.4.0.md`
 
-The workflow should fail clearly if the matching notes file does not exist.
+The workflow fails clearly if the matching notes file does not exist.
 
 ### Development vs distribution repository
 
@@ -140,19 +141,50 @@ Do not infer that a release created here is necessarily the final public release
 
 ---
 
-## 5. Compatibility inventory / cleanup
+## 5. Backlink compatibility policy
 
-**Status:** `candidate`
+**Status:** `in_progress`
 
-Before deleting compatibility branches, maintain a table of historical inputs:
+Owner decision on 2026-09-13: historical Go Study v1 compatibility is not required because no important notes depend on it.
 
-| Input family | New output generated? | Old input accepted? | Policy |
+Target accepted input families:
+
+| Input family | New output generated? | Input accepted? | Product meaning / policy |
 | --- | --- | --- | --- |
-| Current managed Go Study backlink (v3) | yes | yes | stable current format |
-| Current freeform Go Study backlink (v2) | yes | yes | stable current format |
-| Managed Go Study backlink v1 | no for new managed notes | yes | existing old-input compatibility |
-| Beta path-style freeform Go Study link | no | currently accepted by parser | review/document policy before removal |
-| `jv://open?...` | no | optional when Legacy JV compatibility is enabled | explicitly supported historical input |
+| Managed Go Study backlink (`v=3`) | yes | yes | current managed-resource backlink with portable fallback metadata |
+| Freeform Go Study backlink (`v=2`) | yes | yes | current unregistered/local/portable-media backlink |
+| Managed Go Study backlink (`v=1`) | no | **no** | historical development input; compatibility intentionally removed |
+| Beta path-style Freeform (`path=...`, `v=1`) | no | **no** | beta.15 development format; compatibility intentionally removed |
+| `jv://open?...` | no | optional when Legacy JV Compatibility is enabled | separate explicitly gated legacy input, not part of Go Study v1/v2/v3 family |
 | Native Bilibili `?t=` URL | yes for Bilibili web mode | browser-native | not a Go Study protocol |
 
-Rule: distinguish **output compatibility** from **input compatibility**. A format may stop being generated while remaining readable for old notes.
+Rule: old-input compatibility is a product promise, not a default engineering virtue. Keep it only when there is real user data or a deliberate support commitment.
+
+---
+
+## 6. Protocol semantic naming cleanup
+
+**Status:** `planned`
+
+### Problem
+
+The current wire labels can be misread as a single chronological sequence:
+
+- Freeform uses `v=2`;
+- Managed portable uses `v=3`.
+
+In reality these are **two current semantic families**, not “old v2 versus new v3”. This creates unnecessary cognitive load for humans and coding agents and makes Freeform v2 look like historical residue even though it is current.
+
+### Direction
+
+Design a future protocol representation where semantic family and format revision are explicit instead of relying on one global-looking version number.
+
+The design phase should answer:
+
+- Should `managed` / `freeform` become an explicit family/kind field?
+- Should each family have its own revision number?
+- Can existing current links be migrated or regenerated before changing the wire format?
+- What is the smallest stable public protocol surface we want to promise long term?
+- Can internal constant names be semantic (`MANAGED_REFERENCE_REVISION`, `FREEFORM_REFERENCE_REVISION`) even before the external wire format changes?
+
+Do not silently change current v2/v3 links as part of unrelated work. Treat this as a dedicated protocol-design change with migration/compatibility decisions made up front.
