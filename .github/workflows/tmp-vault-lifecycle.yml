@@ -1,0 +1,32 @@
+name: Temporary Vault Lifecycle Repair
+on:
+  push:
+    branches:
+      - 'work/20260913-chatgpt-vault-lifecycle-coordination'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/20260913-chatgpt-vault-lifecycle-coordination
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply repair
+        run: python scripts/tmp_patch_vault_lifecycle.py
+      - name: Focused tests
+        run: node --test tests/vault-lifecycle.test.cjs tests/project-notes.test.cjs tests/runtime-architecture-characterization.test.cjs
+      - name: Build bundle
+        run: node build.mjs
+      - name: Commit repair and remove helpers
+        run: |
+          rm scripts/tmp_patch_vault_lifecycle.py .github/workflows/tmp-vault-lifecycle.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests docs main.js scripts .github/workflows
+          git commit -m 'fix: coordinate Vault lifecycle state atomically'
+          git push origin HEAD:work/20260913-chatgpt-vault-lifecycle-coordination
