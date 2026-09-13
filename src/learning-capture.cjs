@@ -10,6 +10,7 @@ const {
 const { requestNativePotPlayer } = require('./native-potplayer.cjs');
 const { requestPotPlayerBridge } = require('./potplayer-bridge.cjs');
 const { requestBilibiliWebBridge } = require('./bilibili-web-bridge.cjs');
+const { enrichBilibiliMediaTitle } = require('./bilibili-metadata.cjs');
 const { currentProductSettings, normalizeCaptureFolder } = require('./product-settings.cjs');
 const { updateResumePosition } = require('./resource-resolver.cjs');
 const { scheduleCompanionEditorCursorReveal } = require('./companion-note-window.cjs');
@@ -44,6 +45,21 @@ function resolveLearningContext(plugin, playerMedia) {
       preferFreeform: String(playerMedia?.source || playerMedia?.transport || '') === 'bilibili-web'
     }
   );
+}
+
+async function resolvePreparedLearningContext(plugin, response, options = {}) {
+  let playerResponse = response;
+  let context = resolveLearningContext(plugin, playerResponse?.media);
+  if (context.mode !== 'freeform') return { context, response: playerResponse };
+
+  const media = await enrichBilibiliMediaTitle(
+    plugin,
+    playerResponse?.media || {},
+    options.requestUrl || requestUrl
+  );
+  if (media !== playerResponse?.media) playerResponse = { ...playerResponse, media };
+  context = resolveLearningContext(plugin, playerResponse?.media);
+  return { context, response: playerResponse };
 }
 
 function noteOutputOptions(plugin) {
@@ -121,8 +137,8 @@ async function requestLearningPlayer(plugin, action, options = {}) {
 async function prepareCurrentLearningPosition(plugin, options = {}) {
   const editor = activeEditor(plugin, options.editor);
   const response = await requestLearningPlayer(plugin, 'current', options);
-  const context = resolveLearningContext(plugin, response.media);
-  return { ...context, editor, player: response };
+  const prepared = await resolvePreparedLearningContext(plugin, response, options);
+  return { ...prepared.context, editor, player: prepared.response };
 }
 
 async function insertPreparedMarkdown(plugin, prepared, markdown) {
@@ -242,9 +258,9 @@ async function saveCaptureToVault(plugin, resource, position, pngBuffer, context
 async function prepareCaptureLearningPosition(plugin, options = {}) {
   const editor = activeEditor(plugin, options.editor);
   const response = await requestLearningPlayer(plugin, 'capture', options);
-  const context = resolveLearningContext(plugin, response.media);
+  const prepared = await resolvePreparedLearningContext(plugin, response, options);
   const png = options.readClipboardPng ? options.readClipboardPng() : clipboardPngBuffer(options.clipboard || clipboard);
-  return { ...context, editor, player: response, png };
+  return { ...prepared.context, editor, player: prepared.response, png };
 }
 
 async function commitPreparedCapture(plugin, prepared, markdownBuilder) {
