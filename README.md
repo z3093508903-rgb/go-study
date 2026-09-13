@@ -239,12 +239,16 @@ Go Study 0.3.0 的网页视频增强首先针对 **Bilibili** 做了专门适配
 
 ## 兼容边界
 
-正式兼容承诺：
+当前 Go Study 回链只承诺两种正式输入：
 
-- 当前 Go Study 资源 / 回链格式；
-- 历史 `jv://open?... ` 链接（开启 Legacy JV Compatibility 后）。
+- **Managed**：已收录资源的当前格式（当前 wire version 为 `v=3`）；
+- **Freeform**：未收录 / 本地 / 临时媒体的当前格式（当前 wire version 为 `v=2`）。
 
-开发阶段中间 beta 产生的实验型 PotPlayer 链接，不作为长期 Stable 兼容承诺。
+历史 Go Study `v=1` Managed 回链，以及 beta.15 的 `mode=freeform&path=...&v=1` 开发格式，不再作为兼容输入。
+
+历史 `jv://open?...` 是一条**独立的可选 Legacy 输入通道**：只有用户主动开启 Legacy JV Compatibility 后才接受；Go Study 不会生成新的 JV 链接。
+
+`v=2` 与 `v=3` 当前代表两个不同的协议族，不表示“v3 全面替代 v2”。后续会单独设计更清晰的协议语义命名，避免把当前 Freeform v2 误解成历史遗产。
 
 ---
 
