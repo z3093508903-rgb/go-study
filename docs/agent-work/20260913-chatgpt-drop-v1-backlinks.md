@@ -20,12 +20,17 @@ This includes both:
 - `src/resource-reference.cjs`
 - `src/entry.cjs`
 - `tests/resource-reference.test.cjs`
+- `tests/resource-reference-runtime.test.cjs`
+- `tests/timeline-navigator.test.cjs`
+- `tests/reference-fallback.test.cjs`
 - `README.md`
 - `docs/ROADMAP.md`
 - `main.js` (generated only, through build)
 - this work record
 
-Other files may be added only if CI/release validation proves they contain a direct v1 compatibility dependency; scope deviation must be recorded first.
+### Scope deviation
+
+The first CI run after tightening the parser exposed existing v1 assumptions in runtime and Timeline tests. Those tests are now explicitly in scope. `tests/reference-fallback.test.cjs` is also in scope because its test names/fixtures describe generic Resource-ID recovery as “legacy v1” even though that recovery mechanism remains useful for current Managed links whose Resource state is missing.
 
 ## Do not touch
 
@@ -43,6 +48,7 @@ Other files may be added only if CI/release validation proves they contain a dir
 - Current Freeform v2 links remain supported/generated.
 - beta.15 `path=` input stops being accepted.
 - Legacy JV remains separately supported when explicitly enabled.
+- Resource-ID recovery / relinking for current Managed links remains supported.
 - No `data.json` schema or migration change.
 
 Owner confirmed there are no important notes relying on v1 compatibility and explicitly approved dropping it.
@@ -53,6 +59,8 @@ Owner confirmed there are no important notes relying on v1 compatibility and exp
 - Make Freeform parser accept only v2 and `locator`, not historical `path`.
 - Ensure v1 and beta.15 examples fail closed in tests.
 - Update internal managed-reference construction so runtime code does not create semantic v1 objects.
+- Move runtime/Timeline fixtures to current v3 semantics.
+- Keep Resource-ID recovery tests while removing misleading “legacy v1” semantics from them.
 - Rebuild `main.js`.
 - Run full repository CI/release checks.
 
@@ -62,5 +70,5 @@ Revert this work item/PR to restore v1/beta.15 input parsing. No user state migr
 
 ## Test log
 
-- [UNRUN] implementation tests — changes not applied yet.
-- [UNRUN] full CI — PR not opened yet.
+- [FAIL] First PR CI run: 425 tests, 418 pass, 7 fail. Failures were all stale v1 assumptions in `resource-reference-runtime` and `timeline-navigator`; the tightened protocol parser itself passed its new current-format/rejection tests.
+- [UNRUN] Follow-up full CI — pending cleanup of discovered dependencies and regenerated `main.js`.
