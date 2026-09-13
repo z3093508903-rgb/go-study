@@ -14,6 +14,8 @@ This repository is the owner's development source of truth for current code, tes
 
 Public distribution may be performed from a separate repository chosen by the owner. Until that repository is explicitly recorded, do **not** infer one and do not publish/mirror/sync to another repository without an explicit owner instruction.
 
+This repository-role statement supersedes older wording in `docs/HANDOFF_CURRENT.md` that may describe this repository as the final public distribution repository. The current 0.3.0 smoke/release baseline in that handoff remains useful; only the repository-role/publication assumption is superseded until the handoff is refreshed after final acceptance.
+
 Do **not** continue development from `z3093508903-rgb/learning-resource-hub-vnext`.
 
 That repository is an early-development archive / archaeology source only.
@@ -22,8 +24,8 @@ That repository is an early-development archive / archaeology source only.
 
 Read, in order:
 
-1. `docs/HANDOFF_CURRENT.md`
-2. `docs/AGENT_COLLABORATION.md`
+1. `docs/AGENT_COLLABORATION.md`
+2. `docs/HANDOFF_CURRENT.md`
 3. active `docs/agent-work/*.md` records that overlap the task
 4. `README.md`
 5. `docs/USER_GUIDE.md`
