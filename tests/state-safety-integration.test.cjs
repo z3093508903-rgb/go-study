@@ -50,3 +50,12 @@ test('stable startup supports one-time Preview migration without overwriting sta
   assert.match(mainSource, /await this\.saveData\(this\.state\)/);
   assert.match(mainSource, /原 Preview data\.json 保持不变/);
 });
+
+
+test('high-risk migration and restore require protective snapshots before replacing state', () => {
+  assert.match(mainSource, /requireRecoverySnapshot\(protectedMigration, 'Preview 迁移'\)/);
+  assert.match(mainSource, /readOnlySafety = true/);
+  const snapshotIndex = mainSource.indexOf("writeRecoveryState(this, this.state, 'before-restore')");
+  const replaceIndex = mainSource.indexOf('this.state = restored;', snapshotIndex);
+  assert.ok(snapshotIndex >= 0 && replaceIndex > snapshotIndex);
+});
