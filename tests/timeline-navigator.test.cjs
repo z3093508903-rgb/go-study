@@ -47,9 +47,9 @@ function pluginFixture() {
 
 test('timeline extracts Go Study links and groups mixed-video timestamps by source', () => {
   const plugin = pluginFixture();
-  const a = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 86 }, version: 1 });
-  const b = buildReferenceUri({ resourceId: 'r2', position: { type: 'time', seconds: 42 }, version: 1 });
-  const c = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 14 }, version: 1 });
+  const a = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 86 }, version: 3 });
+  const b = buildReferenceUri({ resourceId: 'r2', position: { type: 'time', seconds: 42 }, version: 3 });
+  const c = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 14 }, version: 3 });
   const markdown = [
     `[第一处](${a})`,
     `[第二处](${b})`,
@@ -90,7 +90,7 @@ test('timeline item click navigates to its Markdown line instead of opening medi
     containerEl: { querySelector() { return null; } }
   };
   const result = navigateTimelineItem(view, {
-    uri: 'obsidian://go-study?resource=r1&position=time%3A65&v=1',
+    uri: 'obsidian://go-study?resource=r1&position=time%3A65&v=3',
     line: 12
   });
   assert.deepEqual(result, { transport: 'note', mode: 'editor', line: 12, found: true });
@@ -108,7 +108,7 @@ test('timeline rendered fallback scrolls the matching backlink into view', () =>
     scrollIntoView(options) { calls.push(options); }
   };
   const result = navigateTimelineItem({ containerEl: { querySelector() { return null; } } }, {
-    uri: 'obsidian://go-study?resource=r1&position=time%3A65&v=1',
+    uri: 'obsidian://go-study?resource=r1&position=time%3A65&v=3',
     line: null,
     anchor
   });
@@ -118,10 +118,9 @@ test('timeline rendered fallback scrolls the matching backlink into view', () =>
   assert.equal(calls.length, 1);
 });
 
-
 test('timeline falls back to rendered Obsidian links when editor/source text is unavailable', () => {
   const plugin = pluginFixture();
-  const uri = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 16 }, version: 1 });
+  const uri = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 16 }, version: 3 });
   const anchor = {
     getAttribute(name) { return name === 'href' ? uri : ''; }
   };
@@ -156,10 +155,9 @@ test('timeline implementation mounts to document body so CodeMirror overflow can
   assert.match(css, /z-index:\s*2147482000/);
 });
 
-
 test('active Markdown leaf is accepted even when getLeavesOfType misses it', async () => {
   const plugin = pluginFixture();
-  const uri = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 16 }, version: 1 });
+  const uri = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 16 }, version: 3 });
   const host = {
     ownerDocument: {
       documentElement: { clientWidth: 1200 },
@@ -207,41 +205,39 @@ test('runtime source installs timeline before later DOM entry-point hooks', () =
   assert.ok(source.indexOf('installTimelineNavigator(this)') < source.indexOf('installProjectNoteEntryPoints(this)'));
 });
 
-
-test('timeline parses the exact managed v1 backlink shape from real Obsidian notes', () => {
+test('timeline parses the exact current managed v3 backlink shape from Obsidian notes', () => {
   const samples = [
-    'obsidian://go-study?resource=resource-mt7g36x5-dcnnpi7&position=time%3A16.594&v=1',
-    'obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A14.937&v=1',
-    'obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A86.497&v=1',
-    'obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A112.945&v=1',
-    'obsidian://go-study?resource=resource-mtbx3iac-nusq2e9&position=time%3A8795.174&v=1',
-    'obsidian://go-study?resource=resource-mt7g36x5-emnzwlq&position=time%3A20.788&v=1',
-    'obsidian://go-study?resource=resource-mt7g36x5-emnzwlq&position=time%3A57.397&v=1'
+    'obsidian://go-study?resource=resource-mt7g36x5-dcnnpi7&position=time%3A16.594&v=3',
+    'obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A14.937&v=3',
+    'obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A86.497&v=3',
+    'obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A112.945&v=3',
+    'obsidian://go-study?resource=resource-mtbx3iac-nusq2e9&position=time%3A8795.174&v=3',
+    'obsidian://go-study?resource=resource-mt7g36x5-emnzwlq&position=time%3A20.788&v=3',
+    'obsidian://go-study?resource=resource-mt7g36x5-emnzwlq&position=time%3A57.397&v=3'
   ];
   for (const uri of samples) {
     const parsed = parseTimelineReferenceUri(uri);
-    assert.equal(parsed.version, 1);
+    assert.equal(parsed.version, 3);
     assert.equal(parsed.position.type, 'time');
     assert.ok(parsed.position.seconds >= 0);
   }
 });
 
-test('timeline groups the real seven-link note into four managed sources even if resources are missing', () => {
+test('timeline groups a seven-link v3 note into four managed sources even if resources are missing', () => {
   const plugin = { state: { resources: {} } };
   const markdown = [
-    '[↗ 回到课程 · 00:16](obsidian://go-study?resource=resource-mt7g36x5-dcnnpi7&position=time%3A16.594&v=1)',
-    '[↗ 回到课程 · 00:14](obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A14.937&v=1)',
-    '[↗ 回到课程 · 01:26](obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A86.497&v=1)',
-    '[↗ 回到课程 · 01:52](obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A112.945&v=1)',
-    '[↗ 回到课程 · 02:26:35](obsidian://go-study?resource=resource-mtbx3iac-nusq2e9&position=time%3A8795.174&v=1)',
-    '[↗ 回到课程 · 00:20](obsidian://go-study?resource=resource-mt7g36x5-emnzwlq&position=time%3A20.788&v=1)',
-    '[↗ 回到课程 · 00:57](obsidian://go-study?resource=resource-mt7g36x5-emnzwlq&position=time%3A57.397&v=1)'
+    '[↗ 回到课程 · 00:16](obsidian://go-study?resource=resource-mt7g36x5-dcnnpi7&position=time%3A16.594&v=3)',
+    '[↗ 回到课程 · 00:14](obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A14.937&v=3)',
+    '[↗ 回到课程 · 01:26](obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A86.497&v=3)',
+    '[↗ 回到课程 · 01:52](obsidian://go-study?resource=resource-mt7g36x6-30v540g&position=time%3A112.945&v=3)',
+    '[↗ 回到课程 · 02:26:35](obsidian://go-study?resource=resource-mtbx3iac-nusq2e9&position=time%3A8795.174&v=3)',
+    '[↗ 回到课程 · 00:20](obsidian://go-study?resource=resource-mt7g36x5-emnzwlq&position=time%3A20.788&v=3)',
+    '[↗ 回到课程 · 00:57](obsidian://go-study?resource=resource-mt7g36x5-emnzwlq&position=time%3A57.397&v=3)'
   ].join('\n');
   const groups = timelineGroupsFromMarkdown(markdown, plugin);
   assert.equal(groups.length, 4);
   assert.equal(timelineSummary(groups).timestampCount, 7);
 });
-
 
 test('timeline signature stays stable when the source/time model has not changed', () => {
   const groups = [{
@@ -249,8 +245,8 @@ test('timeline signature stays stable when the source/time model has not changed
     title: '学习摄影',
     kind: 'managed',
     items: [
-      { seconds: 14, uri: 'obsidian://go-study?resource=r1&position=time%3A14&v=1' },
-      { seconds: 86, uri: 'obsidian://go-study?resource=r1&position=time%3A86&v=1' }
+      { seconds: 14, uri: 'obsidian://go-study?resource=r1&position=time%3A14&v=3' },
+      { seconds: 86, uri: 'obsidian://go-study?resource=r1&position=time%3A86&v=3' }
     ]
   }];
   assert.equal(timelineSignature(groups), timelineSignature(JSON.parse(JSON.stringify(groups))));
@@ -284,9 +280,8 @@ test('stable timeline render reuses unchanged DOM instead of rebuilding on every
   assert.match(source, /records\.every\(mutationOnlyTouchesTimelineUi\)/);
 });
 
-
 test('raw Go Study matches remember the Markdown line for local knowledge navigation', () => {
-  const uri = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 16 }, version: 1 });
+  const uri = buildReferenceUri({ resourceId: 'r1', position: { type: 'time', seconds: 16 }, version: 3 });
   const markdown = ['标题', '', '一段说明', `[回到课程](${uri})`, '尾部'].join('\n');
   const matches = extractGoStudyReferenceUris(markdown);
   assert.equal(matches.length, 1);
@@ -309,7 +304,6 @@ test('Timeline Navigator no longer owns playback or browser-opening semantics', 
   assert.match(source, /点击定位到笔记/);
 });
 
-
 test('collapsed timeline rail uses one dot per video source, not one dot per timestamp', () => {
   const fs = require('node:fs');
   const path = require('node:path');
@@ -318,7 +312,6 @@ test('collapsed timeline rail uses one dot per video source, not one dot per tim
   assert.match(source, /sourceNodes\.forEach\(\(group, index\)/);
   assert.doesNotMatch(source, /flattened\.slice\(0, 18\)/);
 });
-
 
 test('portable managed v3 keeps its source title visible in Timeline after Resource state is lost', () => {
   const uri = buildReferenceUri({
