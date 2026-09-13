@@ -43,6 +43,7 @@ const {
   previewMigrationCandidate,
   protectPreviewMigration,
   readRawPluginData,
+  requireRecoverySnapshot,
   recoveryDirectory,
   recoveryEntries,
   refreshPersistBaseline,
@@ -181,12 +182,20 @@ class ResourceHubNextPlugin extends Plugin {
       const candidate = previewMigrationCandidate(this);
       if (candidate.eligible) {
         const protectedMigration = protectPreviewMigration(this, candidate);
-        loaded = candidate.data;
-        previewMigration = {
-          sourcePluginId: candidate.pluginId,
-          sourcePath: candidate.filePath,
-          recoveryPath: protectedMigration.recoveryPath || ''
-        };
+        try {
+          requireRecoverySnapshot(protectedMigration, 'Preview 迁移');
+          loaded = candidate.data;
+          previewMigration = {
+            sourcePluginId: candidate.pluginId,
+            sourcePath: candidate.filePath,
+            recoveryPath: protectedMigration.recoveryPath
+          };
+        } catch (error) {
+          console.error('Go Study: Preview migration safety snapshot failed; loading Preview read-only.', error);
+          loaded = candidate.data;
+          this._goStudyStateSafety.readOnlySafety = true;
+          new Notice('Go Study 无法创建 Preview 迁移保护快照，已只读加载 Preview 数据并停止迁移写入。请先检查 Vault 写入权限或磁盘状态。', 12000);
+        }
       }
     }
 
@@ -278,9 +287,13 @@ class ResourceHubNextPlugin extends Plugin {
       throw new Error('Go Study 当前处于数据只读保护状态，已阻止覆盖 data.json。');
     }
     const retention = Math.max(3, Math.min(10, Number(this.state?.uiState?.backupRetention || 10)));
-    protectBeforePersist(this, retention);
+    const protection = protectBeforePersist(this, retention);
+    if (protection.protectionError) {
+      console.warn('Go Study: pre-save recovery snapshot failed; continuing ordinary save with degraded protection.', protection.protectionError);
+    }
     await this.saveData(this.state);
     refreshPersistBaseline(this);
+    return { protection };
   }
 
   bindMemoHeight(textarea, projectId, memoId) {
@@ -524,6 +537,10 @@ class ResourceHubNextPlugin extends Plugin {
     }
 
     restored.uiState.lastAction = null;
+    // Restoring replaces the entire in-memory state; require a real snapshot of
+    // the current state first so a failed recovery-folder write cannot destroy
+    // the only known-good state. writeRecoveryState throws on failure.
+    writeRecoveryState(this, this.state, 'before-restore');
     this.state = restored;
     if (this._goStudyStateSafety) {
       this._goStudyStateSafety.readOnlySafety = false;

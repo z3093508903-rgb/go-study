@@ -278,12 +278,32 @@ function refreshPersistBaseline(plugin) {
 function protectBeforePersist(plugin, keep = 10) {
   const safety = plugin?._goStudyStateSafety || (plugin._goStudyStateSafety = {});
   const raw = readRawPluginData(plugin);
-  if (!raw.raw) return { protected: false, recoveryPath: '' };
-  if (raw.raw === safety.lastProtectedRaw) return { protected: false, recoveryPath: '' };
+  if (!raw.raw) return { protected: false, recoveryPath: '', protectionError: null };
+  if (raw.raw === safety.lastProtectedRaw) return { protected: false, recoveryPath: '', protectionError: null };
   const protectedRaw = protectRawPluginData(plugin, 'before-save');
-  if (protectedRaw.raw) safety.lastProtectedRaw = protectedRaw.raw;
-  pruneRecoveryBackups(plugin, keep);
-  return { protected: Boolean(protectedRaw.recoveryPath), recoveryPath: protectedRaw.recoveryPath || '' };
+  const protectedOk = Boolean(protectedRaw.recoveryPath);
+  const protectionError = protectedOk
+    ? null
+    : (protectedRaw.protectionError || new Error('Go Study 无法创建保存前恢复快照。'));
+  if (protectedOk) {
+    safety.lastProtectedRaw = protectedRaw.raw;
+    safety.lastProtectionError = null;
+    safety.protectionDegraded = false;
+    pruneRecoveryBackups(plugin, keep);
+  } else {
+    safety.lastProtectionError = protectionError;
+    safety.protectionDegraded = true;
+  }
+  return { protected: protectedOk, recoveryPath: protectedRaw.recoveryPath || '', protectionError };
+}
+
+function requireRecoverySnapshot(result, operation = '高风险操作') {
+  if (result?.recoveryPath) return result;
+  const cause = result?.protectionError || result?.error || null;
+  const error = new Error(`Go Study 无法为${String(operation || '高风险操作')}创建保护快照，已停止操作。`);
+  if (cause) error.cause = cause;
+  error.code = 'GO_STUDY_RECOVERY_REQUIRED';
+  throw error;
 }
 
 module.exports = {
@@ -298,6 +318,7 @@ module.exports = {
   protectPreviewMigration,
   protectBeforePersist,
   protectRawPluginData,
+  requireRecoverySnapshot,
   pruneRecoveryBackups,
   readRawPluginData,
   recoveryDirectory,

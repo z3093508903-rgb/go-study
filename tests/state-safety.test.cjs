@@ -14,6 +14,7 @@ const {
   previewMigrationCandidate,
   protectPreviewMigration,
   protectBeforePersist,
+  requireRecoverySnapshot,
   pruneRecoveryBackups,
   recoveryDirectory,
   recoveryEntries,
@@ -159,4 +160,41 @@ test('stable go-study never replaces an existing stable data.json with Preview d
 
   const candidate = previewMigrationCandidate(plugin);
   assert.equal(candidate.eligible, false);
+});
+
+
+test('failed pre-save protection does not advance lastProtectedRaw and retries later', () => {
+  const { pluginDir, plugin } = fixture();
+  const state = richState();
+  const raw = JSON.stringify(state);
+  fs.writeFileSync(path.join(pluginDir, 'data.json'), raw, 'utf8');
+  plugin._goStudyStateSafety = { lastProtectedRaw: '' };
+
+  const originalWrite = fs.writeFileSync;
+  fs.writeFileSync = function failRecovery(target, ...args) {
+    if (String(target).includes('go-study-recovery')) throw new Error('disk denied');
+    return originalWrite.call(this, target, ...args);
+  };
+  let failed;
+  try { failed = protectBeforePersist(plugin, 10); }
+  finally { fs.writeFileSync = originalWrite; }
+
+  assert.equal(failed.protected, false);
+  assert.match(String(failed.protectionError?.message || ''), /disk denied/);
+  assert.equal(plugin._goStudyStateSafety.lastProtectedRaw, '');
+  assert.equal(plugin._goStudyStateSafety.protectionDegraded, true);
+
+  const retried = protectBeforePersist(plugin, 10);
+  assert.equal(retried.protected, true);
+  assert.equal(retried.protectionError, null);
+  assert.equal(plugin._goStudyStateSafety.lastProtectedRaw, raw);
+  assert.equal(plugin._goStudyStateSafety.protectionDegraded, false);
+});
+
+test('required recovery snapshots reject high-risk operations when protection failed', () => {
+  assert.throws(
+    () => requireRecoverySnapshot({ recoveryPath: '', error: new Error('read only') }, 'Preview 迁移'),
+    (error) => error?.code === 'GO_STUDY_RECOVERY_REQUIRED' && /Preview 迁移/.test(error.message)
+  );
+  assert.doesNotThrow(() => requireRecoverySnapshot({ recoveryPath: '/tmp/safe.json' }, '恢复'));
 });
