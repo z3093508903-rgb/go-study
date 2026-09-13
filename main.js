@@ -3865,36 +3865,57 @@ class ResourceHubNextPlugin extends Plugin {
     else if (projects.length > 1) menu.addItem((item) => item.setTitle('选择关联项目并打开…').setIcon('panel-top-open').onClick(() => new LinkedProjectPickerModal(this.app, this, projects).open()));
   }
 
-  async handleVaultRename(entry, oldPath) {
+  applyVaultRename(entry, oldPath) {
     const oldNormalized = model.normalizeVaultPath(oldPath);
     const newNormalized = model.normalizeVaultPath(entry.path);
     const refs = Object.values(this.state.vaultRefs || {}).filter((item) => !item.deletedAt && (model.normalizeVaultPath(item.path) === oldNormalized || model.normalizeVaultPath(item.path).startsWith(`${oldNormalized}/`)));
-    if (!refs.length) return;
+    if (!refs.length) return false;
     for (const ref of refs) {
       const current = model.normalizeVaultPath(ref.path);
       const nextPath = current === oldNormalized ? newNormalized : `${newNormalized}${current.slice(oldNormalized.length)}`;
       model.updateVaultRefPath(this.state, ref.id, nextPath);
     }
+    return true;
+  }
+
+  async handleVaultRename(entry, oldPath) {
+    const changed = this.applyVaultRename(entry, oldPath);
+    if (!changed) return false;
     await this.persist();
     await this.workbenchLeaf?.view?.render?.();
+    return true;
+  }
+
+  applyVaultDelete(entry) {
+    const deletedPath = model.normalizeVaultPath(entry.path);
+    const refs = Object.values(this.state.vaultRefs || {}).filter((item) => !item.deletedAt && (model.normalizeVaultPath(item.path) === deletedPath || model.normalizeVaultPath(item.path).startsWith(`${deletedPath}/`)));
+    if (!refs.length) return false;
+    for (const ref of refs) model.markVaultRefMissing(this.state, ref.id);
+    return true;
   }
 
   async handleVaultDelete(entry) {
-    const deletedPath = model.normalizeVaultPath(entry.path);
-    const refs = Object.values(this.state.vaultRefs || {}).filter((item) => !item.deletedAt && (model.normalizeVaultPath(item.path) === deletedPath || model.normalizeVaultPath(item.path).startsWith(`${deletedPath}/`)));
-    if (!refs.length) return;
-    for (const ref of refs) model.markVaultRefMissing(this.state, ref.id);
+    const changed = this.applyVaultDelete(entry);
+    if (!changed) return false;
     await this.persist();
     await this.workbenchLeaf?.view?.render?.();
+    return true;
+  }
+
+  applyVaultCreate(entry) {
+    const createdPath = model.normalizeVaultPath(entry.path);
+    const ref = Object.values(this.state.vaultRefs || {}).find((item) => item.missingAt && model.normalizeVaultPath(item.path) === createdPath);
+    if (!ref) return false;
+    model.restoreVaultRef(this.state, ref.id);
+    return true;
   }
 
   async handleVaultCreate(entry) {
-    const createdPath = model.normalizeVaultPath(entry.path);
-    const ref = Object.values(this.state.vaultRefs || {}).find((item) => item.missingAt && model.normalizeVaultPath(item.path) === createdPath);
-    if (!ref) return;
-    model.restoreVaultRef(this.state, ref.id);
+    const changed = this.applyVaultCreate(entry);
+    if (!changed) return false;
     await this.persist();
     await this.workbenchLeaf?.view?.render?.();
+    return true;
   }
 
   vaultEntryType(entry) { return Array.isArray(entry?.children) ? 'folder' : 'file'; }
@@ -15947,6 +15968,7 @@ const { registerCompanionNoteCommands } = __rhLoad("companion-note-window.cjs");
 const { registerBilibiliWebBridge } = __rhLoad("bilibili-web-bridge.cjs");
 const { enterStudyMode, exitStudyMode, studyModeState } = __rhLoad("study-mode.cjs");
 const { installTimelineNavigator } = __rhLoad("timeline-navigator.cjs");
+const { coordinateVaultLifecycleEvent } = __rhLoad("vault-lifecycle.cjs");
 const {
   clearProjectNoteFoldersOnDelete,
   ensureProjectNotesState,
@@ -16064,35 +16086,29 @@ class ResourceHubNextRuntimePlugin extends ResourceHubNextPlugin {
   }
 
   async handleVaultRename(entry, oldPath) {
-    const result = await super.handleVaultRename(entry, oldPath);
-    const changedNotes = updateProjectNotePathsOnRename(this.state, oldPath, entry?.path);
-    const changedFolders = updateProjectNoteFoldersOnRename(this.state, oldPath, entry?.path);
-    if (changedNotes || changedFolders) {
-      await this.persist();
-      await this.workbenchLeaf?.view?.render?.();
-    }
-    return result;
+    return coordinateVaultLifecycleEvent(this, () => {
+      const changedRefs = this.applyVaultRename(entry, oldPath);
+      const changedNotes = updateProjectNotePathsOnRename(this.state, oldPath, entry?.path);
+      const changedFolders = updateProjectNoteFoldersOnRename(this.state, oldPath, entry?.path);
+      return { changed: Boolean(changedRefs || changedNotes || changedFolders), result: changedRefs };
+    });
   }
 
   async handleVaultDelete(entry) {
-    const result = await super.handleVaultDelete(entry);
-    const changedNotes = markProjectNotesMissing(this.state, entry?.path);
-    const changedFolders = clearProjectNoteFoldersOnDelete(this.state, entry?.path);
-    if (changedNotes || changedFolders) {
-      await this.persist();
-      await this.workbenchLeaf?.view?.render?.();
-    }
-    return result;
+    return coordinateVaultLifecycleEvent(this, () => {
+      const changedRefs = this.applyVaultDelete(entry);
+      const changedNotes = markProjectNotesMissing(this.state, entry?.path);
+      const changedFolders = clearProjectNoteFoldersOnDelete(this.state, entry?.path);
+      return { changed: Boolean(changedRefs || changedNotes || changedFolders), result: changedRefs };
+    });
   }
 
   async handleVaultCreate(entry) {
-    const result = await super.handleVaultCreate(entry);
-    const changed = restoreProjectNotePath(this.state, entry?.path);
-    if (changed) {
-      await this.persist();
-      await this.workbenchLeaf?.view?.render?.();
-    }
-    return result;
+    return coordinateVaultLifecycleEvent(this, () => {
+      const changedRefs = this.applyVaultCreate(entry);
+      const changedNotes = restoreProjectNotePath(this.state, entry?.path);
+      return { changed: Boolean(changedRefs || changedNotes), result: changedRefs };
+    });
   }
 
   async collapseSidebar() {
@@ -17366,6 +17382,25 @@ module.exports = {
   normalizeVaultPath,
   setMemoHeight
 };
+
+},
+"vault-lifecycle.cjs": (module, exports, require) => {
+'use strict';
+
+async function coordinateVaultLifecycleEvent(plugin, mutate) {
+  if (plugin?._vaultLifecycleReady === false) {
+    return { skipped: true, changed: false, result: null };
+  }
+  if (typeof mutate !== 'function') throw new Error('Vault 生命周期协调器缺少状态更新函数。');
+  const outcome = await mutate() || {};
+  const changed = Boolean(outcome.changed);
+  if (!changed) return { skipped: false, changed: false, result: outcome.result ?? null };
+  await plugin.persist();
+  await plugin.workbenchLeaf?.view?.render?.();
+  return { skipped: false, changed: true, result: outcome.result ?? null };
+}
+
+module.exports = { coordinateVaultLifecycleEvent };
 
 }
 };

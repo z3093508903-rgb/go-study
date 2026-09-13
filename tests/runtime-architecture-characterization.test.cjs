@@ -135,3 +135,16 @@ test('Vault callbacks remain virtual so lifecycle and project-note layers can ex
   assert.match(runtime, /markProjectNotesMissing/);
   assert.match(runtime, /restoreProjectNotePath/);
 });
+
+
+test('Runtime coordinates Vault reference and Project Note mutations before one persistence boundary', () => {
+  const main = source('main.cjs');
+  const runtime = source('runtime-entry.cjs');
+  assert.match(main, /applyVaultRename\(entry, oldPath\)/);
+  assert.match(main, /applyVaultDelete\(entry\)/);
+  assert.match(main, /applyVaultCreate\(entry\)/);
+  assert.match(runtime, /coordinateVaultLifecycleEvent\(this/);
+  assert.match(runtime, /this\.applyVaultRename\(entry, oldPath\)/);
+  assert.match(runtime, /updateProjectNotePathsOnRename/);
+  assert.doesNotMatch(runtime, /super\.handleVaultRename\(entry, oldPath\)/);
+});

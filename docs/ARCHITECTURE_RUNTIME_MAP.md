@@ -295,3 +295,12 @@ F. only then consider internal-name cleanup
 ```
 
 Each step should be independently reversible and should avoid combining structural cleanup with new product features.
+
+
+## Vault lifecycle coordination update (2026-09-13)
+
+Vault rename/delete/create callbacks still dispatch virtually from the Base registration, but Runtime now owns the complete current-product event boundary. Base exposes `applyVaultRename`, `applyVaultDelete`, and `applyVaultCreate` mutation helpers. Runtime combines those Vault Ref mutations with Project Notes path/folder mutations inside `coordinateVaultLifecycleEvent()` and performs one persist/render after all mutations have completed.
+
+The coordinator applies `_vaultLifecycleReady` to the **entire** event. Before layout readiness, neither Vault Ref nor Project Notes state is changed. If persistence fails after a changed event, both domains have already moved in the same direction in memory; the previous split path where one domain could be new while the other stayed old is removed.
+
+The lower `entry.cjs` readiness overrides remain as defensive behavior for lower-layer/direct use, but the built Runtime path does not rely on `super.handleVaultRename/Delete/Create()` for current-product coordination.
