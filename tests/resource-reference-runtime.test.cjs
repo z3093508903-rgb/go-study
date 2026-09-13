@@ -58,7 +58,7 @@ function withPluginModule(run) {
   }
 }
 
-test('runtime backlink resolves Resource ID, passes position to playback, and updates resume', async () => {
+test('runtime managed backlink resolves Resource ID, passes position to playback, and updates resume', async () => {
   await withPluginModule(async ({ ExportedPlugin }) => {
     const plugin = new ExportedPlugin();
     plugin.state = {
@@ -88,7 +88,7 @@ test('runtime backlink resolves Resource ID, passes position to playback, and up
     const opened = await plugin.handleResourceReference({
       resource: 'resource-1',
       position: 'time:5076',
-      v: '1'
+      v: '3'
     });
 
     assert.equal(opened, true);
@@ -103,6 +103,25 @@ test('runtime backlink resolves Resource ID, passes position to playback, and up
   });
 });
 
+test('runtime backlink rejects removed v1 input before playback resolution', async () => {
+  await withPluginModule(async ({ ExportedPlugin, Notice }) => {
+    const plugin = new ExportedPlugin();
+    plugin.state = { resources: {}, sources: {}, uiState: {} };
+    let launchCalls = 0;
+    plugin.openPositionedPlayTarget = async () => { launchCalls += 1; return true; };
+
+    const opened = await plugin.handleResourceReference({
+      resource: 'resource-1',
+      position: 'time:10',
+      v: '1'
+    });
+
+    assert.equal(opened, false);
+    assert.equal(launchCalls, 0);
+    assert.ok(Notice.messages.some((message) => message.includes('不支持的 Go Study 回链版本')));
+  });
+});
+
 test('runtime backlink rejects arbitrary path execution before playback resolution', async () => {
   await withPluginModule(async ({ ExportedPlugin, Notice }) => {
     const plugin = new ExportedPlugin();
@@ -113,7 +132,7 @@ test('runtime backlink rejects arbitrary path execution before playback resoluti
     const opened = await plugin.handleResourceReference({
       resource: 'resource-1',
       position: 'time:10',
-      v: '1',
+      v: '3',
       path: 'C:\\Windows\\System32\\cmd.exe'
     });
 
