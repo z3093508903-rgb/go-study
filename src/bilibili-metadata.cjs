@@ -1,6 +1,7 @@
 'use strict';
 
 const BILIBILI_VIEW_ENDPOINT = 'https://api.bilibili.com/x/web-interface/view';
+const BILIBILI_TITLE_LOOKUP_TIMEOUT_MS = 1500;
 const BVID_PATTERN = /BV[0-9A-Za-z]{10}/i;
 
 function cleanBilibiliMediaTitle(value) {
@@ -52,17 +53,28 @@ function cachedBilibiliTitle(plugin, bvid) {
   return cleanBilibiliMediaTitle(bilibiliTitleCache(plugin)?.get(id.toLowerCase()) || '');
 }
 
-async function fetchBilibiliVideoTitle(requestImpl, bvid) {
+async function fetchBilibiliVideoTitle(requestImpl, bvid, options = {}) {
   const id = extractBilibiliBvid(bvid);
   if (!id || typeof requestImpl !== 'function') return '';
-  const response = await requestImpl({
+  const timeoutMs = Math.max(50, Number(options.timeoutMs || BILIBILI_TITLE_LOOKUP_TIMEOUT_MS));
+  let timeoutId = null;
+  const requestPromise = Promise.resolve().then(() => requestImpl({
     url: `${BILIBILI_VIEW_ENDPOINT}?bvid=${encodeURIComponent(id)}`,
     method: 'GET',
     headers: {
       Referer: 'https://www.bilibili.com/',
       'User-Agent': 'Mozilla/5.0 Go-Study/0.3'
     }
+  }));
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('bilibili_title_lookup_timeout')), timeoutMs);
   });
+  let response;
+  try {
+    response = await Promise.race([requestPromise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
   let payload = response?.json;
   if (!payload && response?.text) {
     try { payload = JSON.parse(response.text); } catch {}
@@ -112,6 +124,7 @@ function liveBilibiliTitleForReference(plugin, reference = {}) {
 }
 
 module.exports = {
+  BILIBILI_TITLE_LOOKUP_TIMEOUT_MS,
   BILIBILI_VIEW_ENDPOINT,
   cachedBilibiliTitle,
   cleanBilibiliMediaTitle,

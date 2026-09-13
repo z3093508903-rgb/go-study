@@ -85,3 +85,12 @@ test('fetch helper accepts the public view endpoint payload shape', async () => 
   }), BVID);
   assert.equal(title, '公开接口标题');
 });
+
+
+test('Bilibili metadata lookup has a finite timeout for a hung request', async () => {
+  const { fetchBilibiliVideoTitle } = require('../src/bilibili-metadata.cjs');
+  await assert.rejects(
+    () => fetchBilibiliVideoTitle(() => new Promise(() => {}), BVID, { timeoutMs: 20 }),
+    /bilibili_title_lookup_timeout/
+  );
+});

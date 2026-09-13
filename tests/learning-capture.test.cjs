@@ -353,3 +353,38 @@ test('BV title lookup failure never blocks Freeform timestamp insertion', async 
   assert.match(inserted[0], /obsidian:\/\/go-study\?/);
 });
 
+
+
+test('capture freezes clipboard bytes before delayed Bilibili title enrichment', async () => {
+  const { prepareCaptureLearningPosition } = loadCaptureModule();
+  const { plugin } = localPluginFixture();
+  plugin.state.resources = {};
+  plugin.activeMediaSession = null;
+  plugin.resourceActions = () => ({});
+  const bvid = 'BV1xx411c7mD';
+  let clipboardBytes = [1, 2, 3];
+  let reads = 0;
+  const result = await prepareCaptureLearningPosition(plugin, {
+    bridgeRequest: async () => ({
+      ok: true,
+      media: {
+        path: `https://www.bilibili.com/video/${bvid}`,
+        title: `${bvid} - PotPlayer`,
+        positionSeconds: 42
+      }
+    }),
+    readClipboardPng: () => {
+      reads += 1;
+      return Buffer.from(clipboardBytes);
+    },
+    requestUrl: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      clipboardBytes = [9, 9, 9];
+      return { json: { code: 0, data: { title: '真实标题' } } };
+    },
+    editor: { replaceSelection() {} }
+  });
+  assert.equal(reads, 1);
+  assert.deepEqual([...result.png], [1, 2, 3]);
+  assert.equal(result.bridgeMedia.title, '真实标题');
+});

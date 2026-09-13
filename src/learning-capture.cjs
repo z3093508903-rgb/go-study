@@ -258,8 +258,8 @@ async function saveCaptureToVault(plugin, resource, position, pngBuffer, context
 async function prepareCaptureLearningPosition(plugin, options = {}) {
   const editor = activeEditor(plugin, options.editor);
   const response = await requestLearningPlayer(plugin, 'capture', options);
-  const prepared = await resolvePreparedLearningContext(plugin, response, options);
   const png = options.readClipboardPng ? options.readClipboardPng() : clipboardPngBuffer(options.clipboard || clipboard);
+  const prepared = await resolvePreparedLearningContext(plugin, response, options);
   return { ...prepared.context, editor, player: prepared.response, png };
 }
 
