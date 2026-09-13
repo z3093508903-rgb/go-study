@@ -1,10 +1,11 @@
 # Work Record — 20260913-chatgpt-capture-metadata-race
 
-- Status: `in_progress`
+- Status: `ready_for_review`
 - Agent: ChatGPT
 - Branch: `work/20260913-chatgpt-capture-metadata-race`
-- Base: current `main`
+- Base: `main@23c908ee63e7a16915ac6caf6965201a5267f588`
 - Started: 2026-09-13 (UTC+8)
+- Updated: 2026-09-13 (UTC+8)
 
 ## Goal
 
@@ -19,7 +20,7 @@ Remove the clipboard race introduced by best-effort Bilibili title enrichment. C
 - `main.js` (generated only)
 - this work record
 
-Temporary branch-only helper files may be used and must be deleted before merge.
+Temporary branch-only helper files were removed before review.
 
 ## Do not touch
 
@@ -29,14 +30,25 @@ Temporary branch-only helper files may be used and must be deleted before merge.
 - Timeline navigation semantics
 - Bilibili Bridge auth/listener roadmap work
 
+## Implemented behavior
+
+- PNG bytes are read immediately after the player returns a capture, before optional title enrichment awaits.
+- Bilibili title lookup has a finite default timeout and remains fail-open.
+- Metadata failure/timeout cannot block capture indefinitely.
+
 ## Safety / rollback
 
-No persistent-data or protocol change. Revert the work item/PR to roll back.
+No persistent-data or protocol change. Revert this PR to roll back.
 
-## Validation plan
+## Validation
 
-- [UNRUN] prove PNG bytes are captured before delayed metadata resolution can change the clipboard.
-- [UNRUN] prove metadata lookup has a finite fail-open timeout.
-- [UNRUN] focused tests.
-- [UNRUN] full release checks and bundle drift verification.
+- [PASS] behavior test proves PNG bytes remain the original capture while delayed metadata lookup mutates the simulated clipboard.
+- [PASS] metadata helper rejects a hung request after a finite test timeout.
+- [PASS] focused `learning-capture` + `bilibili-metadata` tests.
+- [PASS] PR CI run `34756618404`: full release checks passed.
+- [PASS] committed `main.js` matches rebuilt source.
 - [MANUAL REQUIRED] real Windows PotPlayer/Bilibili screenshot + timeline acceptance.
+
+## Data / schema impact
+
+None.
